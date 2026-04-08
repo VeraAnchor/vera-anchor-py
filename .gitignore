@@ -1,0 +1,23 @@
+cat > .gitignore <<'EOF'
+__pycache__
+dist
+build
+*.egg-info
+.env
+*.env.*
+.DS_Store
+coverage
+htmlcov
+.coverage
+*.log
+*.pyc
+.venv
+venv
+EOF
+vera_anchor_dataset_receipts/*
+vera_anchor_ingest_receipts/*
+
+!pyproject.toml
+!setup.cfg
+!requirements*.txt
+!.env.example
