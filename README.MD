@@ -4,8 +4,8 @@ Local-first Python SDK for deterministic evidence generation, ingest workflows, 
 
 Raw data never leaves your machine. Only derived evidence packages are submitted to Hash Factory when you choose to do so.
 
-> **License:** Source-available under MIT with Commons Clause. 
-See [LICENSE](./LICENSE).
+> **License:** Source-available under MIT with Commons Clause.  
+> See [LICENSE](https://github.com/VeraAnchor/vera-anchor-py/blob/main/LICENSE).
 
 ## Installation
 
@@ -282,4 +282,4 @@ Hash Factory is the web interface where users onboard, manage evidence packages,
 
 ## License
 
-Source-available under the MIT License with Commons Clause. Commercial resale of the software itself is restricted. See [LICENSE](./LICENSE).
+Source-available under the MIT License with Commons Clause. Commercial resale of the software itself is restricted. See [LICENSE](https://github.com/VeraAnchor/vera-anchor-py/blob/main/LICENSE).
