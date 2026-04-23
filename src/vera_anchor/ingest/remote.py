@@ -285,6 +285,11 @@ async def execute_ingest_local_only(
         domain=parsed.domain if parsed.domain is not None else None,
         proof_date=parsed.proof_date if parsed.proof_date is not None else None,
         evidence_pointer=_normalize_file_pointer(parsed) or None,
+        issue_certificate_requested=(
+            parsed.issue_certificate
+            if isinstance(parsed.issue_certificate, bool)
+            else None
+        ),
         metadata=parsed.metadata if parsed.metadata is not None else None,
         core=None,
     )
@@ -349,6 +354,9 @@ async def execute_ingest_local_then_submit(
 
     if parsed.metadata:
         remote_request["metadata"] = _to_plain_data(parsed.metadata)
+
+    if isinstance(parsed.issue_certificate, bool):
+        remote_request["issue_certificate"] = parsed.issue_certificate
 
     remote = await submit_ingest_remote(
         config,

@@ -78,6 +78,7 @@ class AnchorPlanRequestV1:
     mode: DatasetAnchorMode
     identity: DatasetIdentity
     rules: DatasetRules | None = None
+    issue_certificate: bool | None = None
 
     def to_dict(self) -> dict[str, object]:
         out: dict[str, object] = {
@@ -86,6 +87,8 @@ class AnchorPlanRequestV1:
         }
         if self.rules is not None:
             out["rules"] = self.rules.to_dict()
+        if self.issue_certificate is not None:
+            out["issue_certificate"] = self.issue_certificate
         return out
 
 
@@ -100,6 +103,7 @@ class AnchorExecuteRequestV1:
     evidence_pointer: str | None = None
     publish_visibility: Literal["public", "unlisted"] | None = None
     set_active: bool | None = None
+    issue_certificate: bool | None = None
 
     def to_dict(self) -> dict[str, object]:
         out: dict[str, object] = {
@@ -119,6 +123,8 @@ class AnchorExecuteRequestV1:
             out["publish_visibility"] = self.publish_visibility
         if self.set_active is not None:
             out["set_active"] = self.set_active
+        if self.issue_certificate is not None:
+            out["issue_certificate"] = self.issue_certificate
         return out
 
 
@@ -132,6 +138,7 @@ class AnchorSubmitRequestV1:
     metadata: Any = None
     publish_visibility: Literal["public", "unlisted"] | None = None
     set_active: bool | None = None
+    issue_certificate: bool | None = None
 
     def to_dict(self) -> dict[str, object]:
         out: dict[str, object] = {
@@ -148,6 +155,8 @@ class AnchorSubmitRequestV1:
             out["publish_visibility"] = self.publish_visibility
         if self.set_active is not None:
             out["set_active"] = self.set_active
+        if self.issue_certificate is not None:
+            out["issue_certificate"] = self.issue_certificate
         return out
 
 
@@ -594,18 +603,20 @@ def parse_anchor_plan_request_v1(body: Any) -> AnchorPlanRequestV1:
 
     _assert_no_unknown_keys(
         body,
-        ["mode", "identity", "rules"],
+        ["mode", "identity", "rules", "issue_certificate"],
         "AnchorPlanRequestV1",
     )
 
     mode = _parse_anchor_mode(body.get("mode", _MISSING))
     identity = _parse_identity(body.get("identity", _MISSING))
     rules = _parse_rules(body.get("rules", _MISSING))
+    issue_certificate = None if "issue_certificate" not in body else _as_boolean_like(body.get("issue_certificate"), "issue_certificate")
 
     return AnchorPlanRequestV1(
         mode=mode,
         identity=identity,
         rules=rules,
+        issue_certificate=issue_certificate,
     )
 
 
@@ -628,6 +639,7 @@ def parse_anchor_execute_request_v1(body: Any) -> AnchorExecuteRequestV1:
             "evidence_pointer",
             "publish_visibility",
             "set_active",
+            "issue_certificate",
         ],
         "AnchorExecuteRequestV1",
     )
@@ -662,6 +674,11 @@ def parse_anchor_execute_request_v1(body: Any) -> AnchorExecuteRequestV1:
         None
         if "set_active" not in body
         else _as_boolean_like(body.get("set_active"), "set_active")
+     )
+    issue_certificate = (
+        None
+        if "issue_certificate" not in body
+        else _as_boolean_like(body.get("issue_certificate"), "issue_certificate")
     )
     metadata = (
         None
@@ -695,6 +712,7 @@ def parse_anchor_execute_request_v1(body: Any) -> AnchorExecuteRequestV1:
         evidence_pointer=evidence_pointer,
         publish_visibility=publish_visibility,
         set_active=set_active,
+        issue_certificate=issue_certificate,
     )
 
 
@@ -716,6 +734,7 @@ def parse_anchor_submit_request_v1(body: Any) -> AnchorSubmitRequestV1:
             "evidence_pointer",
             "publish_visibility",
             "set_active",
+            "issue_certificate",
         ],
         "AnchorSubmitRequestV1",
     )
@@ -743,6 +762,11 @@ def parse_anchor_submit_request_v1(body: Any) -> AnchorSubmitRequestV1:
         None
         if "set_active" not in body
         else _as_boolean_like(body.get("set_active"), "set_active")
+    )
+    issue_certificate = (
+        None
+        if "issue_certificate" not in body
+        else _as_boolean_like(body.get("issue_certificate"), "issue_certificate")
     )
     metadata = (
         None
@@ -780,6 +804,7 @@ def parse_anchor_submit_request_v1(body: Any) -> AnchorSubmitRequestV1:
         metadata=metadata,
         publish_visibility=publish_visibility,
         set_active=set_active,
+        issue_certificate=issue_certificate,
     )
 
 

@@ -119,6 +119,7 @@ async def main():
             display_name="My Dataset",
             publish_visibility="unlisted",
             set_active=True,
+            issue_certificate=False,  # optional; omit to use server default behavior
             hooks=None,
         ),
     )
@@ -160,6 +161,13 @@ asyncio.run(main())
 ## Ingest flow
 
 For generic evidence objects — `file_set`, `file`, `text`, or `json`.
+
+For submit flows, use an org-scoped ingest domain:
+
+`hf:ingest|org:<org_uuid>`
+
+For `text` and `json` material, set an explicit `evidence_pointer`. These
+material kinds do not infer a default pointer from a filesystem path.
 
 ### Local only
 
@@ -226,8 +234,9 @@ async def main():
                     "rules": {"follow_symlinks": False},
                 },
                 "evidence_pointer": "file:///path/to/input",
-                "domain": "hf:ingest|org",
+                "domain": "hf:ingest|org:<org_uuid>",
                 "proof_date": "2026-03-23",
+                "issue_certificate": False,  # optional; omit to use server default behavior
             },
             hooks=None,
         ),
@@ -262,16 +271,24 @@ HF_BASE_URL=https://hfapi.veraanchor.com \
 TEST_ROOT_DIR=/path/to/dataset \
 TEST_DATASET_KEY=<org_id>.<program>.<name> \
 TEST_EVIDENCE_POINTER=s3://your-bucket/path \
-python scripts/example_dataset_local_then_submit.py
+TEST_ISSUE_CERTIFICATE=true \
+python scripts/example_dataset_local_submit.py
 ```
 
 Run an ingest local-only example:
 
 ```bash
-TEST_ROOT_DIR=/path/to/input \
+HF_API_KEY=your_key \
+HF_BASE_URL=https://hfapi.veraanchor.com \
 TEST_OBJECT_KIND=file_set \
 TEST_OBJECT_KEY=my_object \
-python scripts/example_ingest_local_only.py
+TEST_PROGRAM=my_program \
+TEST_VERSION_LABEL=v1 \
+TEST_ROOT_DIR=/path/to/input \
+TEST_DOMAIN=hf:ingest|org:<org_uuid> \
+TEST_EVIDENCE_POINTER=file:///path/to/input \
+TEST_ISSUE_CERTIFICATE=false \
+python scripts/example_ingest_local_submit.py
 ```
 
 ## Hash Factory

@@ -1,5 +1,5 @@
 # ============================================================================
-# File: scripts/example_ingest_local_then_submit.py
+# File: scripts/example_ingest_local_submit.py
 # Purpose:
 #   E2E smoke test for local -> HF ingest register_and_anchor in the Python port.
 # Notes:
@@ -27,6 +27,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from vera_anchor.auth import HfLocalAuth
 from vera_anchor.client import HfLocalClientConfig
+from vera_anchor.ingest.execute import ExecuteHooks
 from vera_anchor.ingest.remote import (
     ExecuteIngestLocalThenSubmitInput,
     execute_ingest_local_then_submit,
@@ -41,7 +42,7 @@ TEST_OBJECT_KEY = os.getenv("TEST_OBJECT_KEY", "hf_local_test_ingest_001").strip
 TEST_PROGRAM = os.getenv("TEST_PROGRAM", "program").strip()
 TEST_VERSION_LABEL = os.getenv("TEST_VERSION_LABEL", "v1").strip()
 
-TEST_DOMAIN = os.getenv("TEST_DOMAIN", "hf:ingest|org").strip()
+TEST_DOMAIN = os.getenv("TEST_DOMAIN", "").strip()
 TEST_PROOF_DATE = os.getenv("TEST_PROOF_DATE", datetime.now(timezone.utc).date().isoformat()).strip()
 
 TEST_ROOT_DIR = os.getenv("TEST_ROOT_DIR", "").strip()
@@ -50,11 +51,14 @@ TEST_TEXT = os.getenv("TEST_TEXT", "hello world")
 TEST_JSON = os.getenv("TEST_JSON", "").strip()
 
 TEST_EVIDENCE_POINTER = os.getenv("TEST_EVIDENCE_POINTER", "").strip()
+TEST_ISSUE_CERTIFICATE = os.getenv("TEST_ISSUE_CERTIFICATE", "").strip()
 
 
 if not HF_API_KEY:
     raise RuntimeError("Missing HF_API_KEY")
 
+if not TEST_DOMAIN:
+    raise RuntimeError("Missing TEST_DOMAIN")
 
 def timestamp_for_dir() -> str:
     return datetime.now(timezone.utc).isoformat().replace(":", "-").replace(".", "-")
@@ -87,6 +91,15 @@ def write_json(file_path: Path, value: Any) -> None:
         encoding="utf-8",
     )
 
+def parse_optional_boolean_env(value: str) -> bool | None:
+    s = str(value or "").strip().lower()
+    if not s:
+        return None
+    if s == "true":
+        return True
+    if s == "false":
+        return False
+    raise RuntimeError("TEST_ISSUE_CERTIFICATE must be true, false, or empty")
 
 def prepare_run_output(base_dir: Path, label: str) -> tuple[Path, Path]:
     run_dir = base_dir / f"{timestamp_for_dir()}-{label}"
@@ -150,15 +163,21 @@ def default_evidence_pointer(material: dict[str, Any]) -> str:
 
     kind = material.get("kind")
     if kind == "file_set":
-        return f"file://{material['root_dir']}"
+        return Path(os.path.abspath(material["root_dir"])).as_uri()
     if kind == "file":
-        return f"file://{material['path']}"
+        return Path(os.path.abspath(material["path"])).as_uri()
     return ""
 
 
 async def main() -> None:
     material = build_material()
     evidence_pointer = default_evidence_pointer(material)
+    if TEST_OBJECT_KIND in {"text", "json"} and not evidence_pointer:
+        raise RuntimeError(
+         f"Missing TEST_EVIDENCE_POINTER for {TEST_OBJECT_KIND}. "
+         "For text/json material, set an explicit evidence pointer such as inline://hello-world."
+    )
+    issue_certificate = parse_optional_boolean_env(TEST_ISSUE_CERTIFICATE)
 
     output_base_dir = Path("./vera_anchor_ingest_receipts")
     output_label = safe_segment(TEST_OBJECT_KEY, "ingest")
@@ -190,6 +209,11 @@ async def main() -> None:
                 **({"evidence_pointer": evidence_pointer} if evidence_pointer else {}),
                 "domain": TEST_DOMAIN,
                 "proof_date": TEST_PROOF_DATE,
+                **(
+                    {"issue_certificate": issue_certificate}
+                    if isinstance(issue_certificate, bool)
+                    else {}
+                ),
                 "metadata": {
                     "source": "hf-local-package",
                     "object_key": TEST_OBJECT_KEY,
@@ -199,8 +223,8 @@ async def main() -> None:
                     "test_source": "ingest-local-register-and-anchor-example",
                 },
             },
-            hooks={
-                "on_scan_progress": lambda p: (
+            hooks=ExecuteHooks(
+                on_scan_progress=lambda p: (
                     print(
                         "[scan:dir]",
                         p.get("rel", "."),
@@ -208,30 +232,22 @@ async def main() -> None:
                         p.get("total_bytes_seen", 0),
                     )
                     if p.get("event") == "dir"
-                    else (
-                        print(
-                            "[scan:skip]",
-                            p.get("rel", ""),
-                            p.get("reason", ""),
-                        )
-                        if p.get("event") == "skip"
-                        else None
-                    )
+                    else None
                 ),
-                "on_hash_progress": lambda p: (
+                on_hash_progress=lambda p: (
                     print(
                         "[hash:item]",
                         p.get("index"),
                         "/",
                         p.get("total"),
                         p.get("item_kind"),
-                        p.get("path_rel", ""),
+                        p.get("path_rel"),
                         p.get("bytes"),
                     )
                     if p.get("event") == "item"
                     else None
                 ),
-            },
+            ),
         ),
     )
 
@@ -294,6 +310,21 @@ async def main() -> None:
                 ),
                 "root_anchor_msg": (
                     remote.get("core", {}).get("root_anchor", {}).get("anchor", {}).get("hcs_message_id")
+                ),
+                "certificate_requested": (
+                    remote.get("core", {}).get("root_anchor", {}).get("certificate", {}).get("requested")
+                ),
+                "certificate_attempted": (
+                    remote.get("core", {}).get("root_anchor", {}).get("certificate", {}).get("attempted")
+                ),
+                "certificate_skipped": (
+                    remote.get("core", {}).get("root_anchor", {}).get("certificate", {}).get("skipped")
+                ),
+                "certificate_issued": (
+                    remote.get("core", {}).get("root_anchor", {}).get("certificate", {}).get("issued")
+                ),
+                "certificate_reason": (
+                    remote.get("core", {}).get("root_anchor", {}).get("certificate", {}).get("reason")
                 ),
             },
             indent=2,

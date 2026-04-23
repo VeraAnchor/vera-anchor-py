@@ -86,6 +86,7 @@ class IngestSubmitRequestV1:
     domain: str
     proof_date: str
     metadata: Any = None
+    issue_certificate: Optional[bool] = None
 
 
 @dataclass(frozen=True)
@@ -610,7 +611,7 @@ def parse_ingest_execute_request_v1(body: Any) -> IngestExecuteRequestV1:
 
     _assert_no_unknown_keys(
         body,
-        ["mode", "identity", "material", "metadata", "evidence_pointer", "domain", "proof_date"],
+        ["mode", "identity", "material", "metadata", "evidence_pointer", "domain", "proof_date", "issue_certificate"],
         "IngestExecuteRequestV1",
     )
 
@@ -636,6 +637,11 @@ def parse_ingest_execute_request_v1(body: Any) -> IngestExecuteRequestV1:
         _mapping_get(body, "proof_date"),
         "proof_date",
         10,
+    )
+    issue_certificate = (
+        None
+        if _mapping_get(body, "issue_certificate") is _MISSING
+        else _as_boolean_like(_mapping_get(body, "issue_certificate"), "issue_certificate")
     )
 
     if proof_date is not None and not _RE_YMD.fullmatch(proof_date):
@@ -670,6 +676,7 @@ def parse_ingest_execute_request_v1(body: Any) -> IngestExecuteRequestV1:
         evidence_pointer=evidence_pointer,
         domain=domain,
         proof_date=proof_date,
+        issue_certificate=issue_certificate,
     )
 
 
@@ -720,7 +727,7 @@ def parse_ingest_submit_request_v1(body: Any) -> IngestSubmitRequestV1:
 
     _assert_no_unknown_keys(
         body,
-        ["mode", "identity", "evidence", "metadata", "evidence_pointer", "domain", "proof_date"],
+        ["mode", "identity", "evidence", "metadata", "evidence_pointer", "domain", "proof_date", "issue_certificate"],
         "IngestSubmitRequestV1",
     )
 
@@ -753,6 +760,11 @@ def parse_ingest_submit_request_v1(body: Any) -> IngestSubmitRequestV1:
         "proof_date",
         10,
     )
+    issue_certificate = (
+        None
+        if _mapping_get(body, "issue_certificate") is _MISSING
+        else _as_boolean_like(_mapping_get(body, "issue_certificate"), "issue_certificate")
+    )
 
     if not evidence_pointer:
         raise IngestValidationError(
@@ -778,6 +790,7 @@ def parse_ingest_submit_request_v1(body: Any) -> IngestSubmitRequestV1:
         domain=domain,
         proof_date=proof_date,
         metadata=metadata,
+        issue_certificate=issue_certificate,
     )
 
 
@@ -1126,7 +1139,12 @@ def _parse_receipt_anchor(value: Any) -> Optional[dict[str, Any]]:
             code="SCHEMA_INVALID",
         )
 
-    _assert_no_unknown_keys(value, ["domain", "proof_date"], "IngestReceiptV1.anchor")
+    _assert_no_unknown_keys(
+        value,
+        ["domain", "proof_date", "issue_certificate_requested"],
+        "IngestReceiptV1.anchor",
+    )
+
     domain = _as_optional_string(
         _mapping_get(value, "domain"),
         "anchor.domain",
@@ -1136,6 +1154,14 @@ def _parse_receipt_anchor(value: Any) -> Optional[dict[str, Any]]:
         _mapping_get(value, "proof_date"),
         "anchor.proof_date",
         10,
+    )
+    issue_certificate_requested = (
+        None
+        if _mapping_get(value, "issue_certificate_requested") is _MISSING
+        else _as_boolean_like(
+            _mapping_get(value, "issue_certificate_requested"),
+            "anchor.issue_certificate_requested",
+        )
     )
     if proof_date is not None and not _RE_YMD.fullmatch(proof_date):
         raise IngestValidationError(
@@ -1148,6 +1174,8 @@ def _parse_receipt_anchor(value: Any) -> Optional[dict[str, Any]]:
         out["domain"] = domain
     if proof_date is not None:
         out["proof_date"] = proof_date
+    if issue_certificate_requested is not None:
+        out["issue_certificate_requested"] = issue_certificate_requested
     return out
 
 

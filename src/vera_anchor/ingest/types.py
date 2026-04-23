@@ -213,6 +213,7 @@ class IngestInput:
     evidence_pointer: Optional[str] = None
     domain: Optional[str] = None
     proof_date: Optional[str] = None
+    issue_certificate: Optional[bool] = None
 
     def to_dict(self) -> dict[str, object]:
         out: dict[str, object] = {
@@ -228,6 +229,8 @@ class IngestInput:
             out["domain"] = self.domain
         if self.proof_date is not None:
             out["proof_date"] = self.proof_date
+        if self.issue_certificate is not None:
+            out["issue_certificate"] = self.issue_certificate
         return out
 
 

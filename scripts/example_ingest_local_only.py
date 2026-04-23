@@ -108,9 +108,9 @@ def default_evidence_pointer(material: dict[str, Any]) -> str:
 
     kind = material.get("kind")
     if kind == "file_set":
-        return f"file://{material['root_dir']}"
+        return Path(os.path.abspath(material["root_dir"])).as_uri()
     if kind == "file":
-        return f"file://{material['path']}"
+        return Path(os.path.abspath(material["path"])).as_uri()
     return ""
 
 

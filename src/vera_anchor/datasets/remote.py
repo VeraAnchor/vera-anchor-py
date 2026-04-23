@@ -106,6 +106,7 @@ class ExecuteDatasetAnchorLocalThenSubmitInput:
     metadata: Mapping[str, Any] | None = None
     publish_visibility: Literal["public", "unlisted"] | None = None
     set_active: bool | None = None
+    issue_certificate: bool | None = None
     hooks: DatasetAnchorProgressHooks | None = None
 
 
@@ -263,6 +264,8 @@ async def execute_dataset_anchor_local_then_submit(
         submit_req["publish_visibility"] = input_value.publish_visibility
     if input_value.set_active is not None:
         submit_req["set_active"] = input_value.set_active
+    if isinstance(input_value.issue_certificate, bool):
+        submit_req["issue_certificate"] = input_value.issue_certificate
 
     remote = await submit_dataset_anchor_remote(
         config,

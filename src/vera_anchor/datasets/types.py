@@ -121,6 +121,7 @@ class AnchorInput:
     root_dir: str
     rules: Optional[DatasetRules] = None
     mode: Optional[DatasetAnchorMode] = None
+    issue_certificate: Optional[bool] = None
 
     def to_dict(self) -> dict[str, object]:
         out: dict[str, object] = {
@@ -131,6 +132,8 @@ class AnchorInput:
             out["rules"] = self.rules.to_dict()
         if self.mode is not None:
             out["mode"] = self.mode
+        if self.issue_certificate is not None:
+            out["issue_certificate"] = self.issue_certificate
         return out
 
 
@@ -325,6 +328,7 @@ class AnchorSubmitInput:
     metadata: Optional[Mapping[str, Any]] = None
     publish_visibility: Optional[PublishVisibility] = None
     set_active: Optional[bool] = None
+    issue_certificate: Optional[bool] = None
 
     def to_dict(self) -> dict[str, object]:
         out: dict[str, object] = {
@@ -341,6 +345,8 @@ class AnchorSubmitInput:
             out["publish_visibility"] = self.publish_visibility
         if self.set_active is not None:
             out["set_active"] = self.set_active
+        if self.issue_certificate is not None:
+            out["issue_certificate"] = self.issue_certificate
         return out
 
 

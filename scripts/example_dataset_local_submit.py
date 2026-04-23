@@ -1,5 +1,5 @@
 # ============================================================================
-# File: scripts/example_dataset_local_then_submit.py
+# File: scripts/example_dataset_local_submit.py
 # Purpose:
 #   E2E smoke test for local -> HF dataset submit in the Python port.
 # Notes:
@@ -49,6 +49,7 @@ TEST_DATASET_KEY = os.getenv(
 TEST_VERSION_LABEL = os.getenv("TEST_VERSION_LABEL", "v1").strip()
 TEST_DISPLAY_NAME = os.getenv("TEST_DISPLAY_NAME", "HF local submit dataset test").strip()
 TEST_EVIDENCE_POINTER = os.getenv("TEST_EVIDENCE_POINTER", "").strip()
+TEST_ISSUE_CERTIFICATE = os.getenv("TEST_ISSUE_CERTIFICATE", "").strip()
 
 
 if not HF_API_KEY:
@@ -93,6 +94,16 @@ def write_json(file_path: Path, value: Any) -> None:
         encoding="utf-8",
     )
 
+def parse_optional_boolean_env(value: str) -> bool | None:
+    s = str(value or "").strip().lower()
+    if not s:
+        return None
+    if s == "true":
+        return True
+    if s == "false":
+        return False
+    raise RuntimeError("TEST_ISSUE_CERTIFICATE must be true, false, or empty")
+ 
 
 def prepare_run_output(base_dir: Path, label: str) -> tuple[Path, Path]:
     run_dir = base_dir / f"{timestamp_for_dir()}-{label}"
@@ -108,6 +119,7 @@ def prepare_run_output(base_dir: Path, label: str) -> tuple[Path, Path]:
 
 
 async def main() -> None:
+    issue_certificate = parse_optional_boolean_env(TEST_ISSUE_CERTIFICATE)
     output_base_dir = Path("./vera_anchor_dataset_receipts")
     output_label = safe_segment(TEST_DATASET_KEY, "dataset")
     run_dir, latest_dir = prepare_run_output(output_base_dir, output_label)
@@ -143,6 +155,11 @@ async def main() -> None:
             evidence_pointer=TEST_EVIDENCE_POINTER,
             publish_visibility="unlisted",
             set_active=True,
+            **(
+                {"issue_certificate": issue_certificate}
+                if isinstance(issue_certificate, bool)
+                else {}
+            ),
             hooks=ExecuteAnchorHooks(
                 on_scan_progress=lambda p: (
                     print(
@@ -206,6 +223,11 @@ async def main() -> None:
                 "remote_receipt_id": remote.get("receipt", {}).get("receipt_id"),
                 "core_dataset_key": remote.get("core", {}).get("dataset", {}).get("dataset_key"),
                 "core_version": remote.get("core", {}).get("version", {}).get("version"),
+                "certificate_requested": remote.get("core", {}).get("certificate", {}).get("requested"),
+                "certificate_attempted": remote.get("core", {}).get("certificate", {}).get("attempted"),
+                "certificate_skipped": remote.get("core", {}).get("certificate", {}).get("skipped"),
+                "certificate_issued": remote.get("core", {}).get("certificate", {}).get("issued"),
+                "certificate_reason": remote.get("core", {}).get("certificate", {}).get("reason"),
                 "core_manifest_hash": remote.get("core", {}).get("version", {}).get("manifest_hash"),
                 "replay_reused": remote.get("core", {}).get("replay", {}).get("reused"),
                 "replay_detected": remote.get("core", {}).get("replay", {}).get("replay"),

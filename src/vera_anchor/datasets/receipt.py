@@ -142,6 +142,59 @@ def _pick_published_core(core: Any) -> dict[str, Any] | None:
         }
     )
 
+def _pick_certificate_core(core: Any) -> dict[str, Any] | None:
+    cert_obj = _get(core, "certificate", None)
+    if not isinstance(cert_obj, Mapping):
+        return None
+
+    nft_obj = _get(cert_obj, "nft", None)
+
+    return _strip_missing(
+        {
+            "attempted": (
+                _MISSING
+                if _get(cert_obj, "attempted", _MISSING) is _MISSING
+                else bool(_get(cert_obj, "attempted"))
+            ),
+            "skipped": (
+                _MISSING
+                if _get(cert_obj, "skipped", _MISSING) is _MISSING
+                else bool(_get(cert_obj, "skipped"))
+            ),
+            "issued": (
+                _MISSING
+                if _get(cert_obj, "issued", _MISSING) is _MISSING
+                else bool(_get(cert_obj, "issued"))
+            ),
+            "deduped": (
+                _MISSING
+                if _get(cert_obj, "deduped", _MISSING) is _MISSING
+                else bool(_get(cert_obj, "deduped"))
+            ),
+            "requested": (
+                _MISSING
+                if _get(cert_obj, "requested", _MISSING) is _MISSING
+                else bool(_get(cert_obj, "requested"))
+            ),
+            "reason": _nullish_to_missing(_get(cert_obj, "reason")),
+            "nft": (
+                _strip_missing(
+                    {
+                        "id": _nullish_to_missing(_get(nft_obj, "id")),
+                        "nft_id": _nullish_to_missing(_get(nft_obj, "nft_id")),
+                        "token_id": _nullish_to_missing(_get(nft_obj, "token_id")),
+                        "serial_number": _nullish_to_missing(_get(nft_obj, "serial_number")),
+                        "wallet_address": _nullish_to_missing(_get(nft_obj, "wallet_address")),
+                        "status": _nullish_to_missing(_get(nft_obj, "status")),
+                        "proof_date": _nullish_to_missing(_get(nft_obj, "proof_date")),
+                        "minted_at": _nullish_to_missing(_get(nft_obj, "minted_at")),
+                    }
+                )
+                if isinstance(nft_obj, Mapping)
+                else _MISSING
+            ),
+        }
+    )
 
 def build_dataset_receipt_v1(
     *,
@@ -172,12 +225,14 @@ def build_dataset_receipt_v1(
         dataset_core = _pick_dataset_core(core)
         version_core = _pick_version_core(core)
         published_core = _pick_published_core(core)
+        certificate_core = _pick_certificate_core(core)
 
         projected_core = _strip_missing(
             {
                 "dataset": dataset_core if dataset_core is not None else _MISSING,
                 "version": version_core if version_core is not None else _MISSING,
                 "published": published_core if published_core is not None else _MISSING,
+                "certificate": certificate_core if certificate_core is not None else _MISSING,
             }
         )
     else:

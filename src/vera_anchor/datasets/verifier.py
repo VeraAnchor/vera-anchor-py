@@ -120,7 +120,7 @@ def _coerce_identity(value: Any) -> DatasetIdentity:
     )
 
 
-def _coerce_rules(value: Any) -> DatasetRules | None:
+def _to_replay_rules(value: Any) -> DatasetRules | None:
     if value is None:
         return None
 
@@ -130,52 +130,38 @@ def _coerce_rules(value: Any) -> DatasetRules | None:
     if not isinstance(value, Mapping):
         return None
 
-    include_globs = value.get("include_globs")
-    exclude_globs = value.get("exclude_globs")
-    allowed_suffixes = value.get("allowed_suffixes")
+    out: dict[str, Any] = {}
 
-    return DatasetRules(
-        include_globs=(
-            tuple(str(v) for v in include_globs)
-            if isinstance(include_globs, (list, tuple))
-            else None
-        ),
-        exclude_globs=(
-            tuple(str(v) for v in exclude_globs)
-            if isinstance(exclude_globs, (list, tuple))
-            else None
-        ),
-        allowed_suffixes=(
-            tuple(str(v) for v in allowed_suffixes)
-            if isinstance(allowed_suffixes, (list, tuple))
-            else None
-        ),
-        max_files=(
-            int(value["max_files"])
-            if value.get("max_files") is not None
-            else None
-        ),
-        max_total_bytes=(
-            int(value["max_total_bytes"])
-            if value.get("max_total_bytes") is not None
-            else None
-        ),
-        max_single_file_bytes=(
-            int(value["max_single_file_bytes"])
-            if value.get("max_single_file_bytes") is not None
-            else None
-        ),
-        follow_symlinks=(
-            bool(value["follow_symlinks"])
-            if value.get("follow_symlinks") is not None
-            else None
-        ),
-        redact_paths=(
-            bool(value["redact_paths"])
-            if value.get("redact_paths") is not None
-            else None
-        ),
-    )
+    # === explicitly allowed replay keys (must match JS) ===
+
+    if value.get("redact_paths") is not None:
+        out["redact_paths"] = bool(value["redact_paths"])
+
+    if value.get("follow_symlinks") is not None:
+        out["follow_symlinks"] = bool(value["follow_symlinks"])
+
+    if isinstance(value.get("include_globs"), (list, tuple)):
+        out["include_globs"] = tuple(str(v) for v in value["include_globs"])
+
+    if isinstance(value.get("exclude_globs"), (list, tuple)):
+        out["exclude_globs"] = tuple(str(v) for v in value["exclude_globs"])
+
+    if isinstance(value.get("allowed_suffixes"), (list, tuple)):
+        out["allowed_suffixes"] = tuple(str(v) for v in value["allowed_suffixes"])
+
+    if value.get("max_files") is not None:
+        out["max_files"] = int(value["max_files"])
+
+    if value.get("max_total_bytes") is not None:
+        out["max_total_bytes"] = int(value["max_total_bytes"])
+
+    if value.get("max_single_file_bytes") is not None:
+        out["max_single_file_bytes"] = int(value["max_single_file_bytes"])
+
+    if not out:
+        return None
+
+    return DatasetRules(**out)
 
 
 def verify_dataset_bundle(bundle: Any) -> DatasetVerifyResult:
@@ -397,7 +383,7 @@ async def verify_dataset_material_against_receipt_or_bundle(
             mode="hash_only",
             identity=_coerce_identity(identity_raw),
             root_dir=root_dir,
-            rules=_coerce_rules(rules_raw),
+            rules=_to_replay_rules(rules_raw),
         )
     )
 

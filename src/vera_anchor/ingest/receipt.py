@@ -36,6 +36,7 @@ class IngestReceiptEvidenceV1(TypedDict):
 class IngestReceiptAnchorV1(TypedDict):
     domain: NotRequired[str | None]
     proof_date: NotRequired[str | None]
+    issue_certificate_requested: NotRequired[bool]
 
 
 class IngestReceiptPointersV1(TypedDict):
@@ -229,6 +230,7 @@ def _pick_projected_anchor(src: Any) -> dict[str, Any] | None:
                     "certificate": _strip_missing(
                         {
                             **({"attempted": bool(certificate["attempted"])} if "attempted" in certificate else {}),
+                            **({"requested": bool(certificate["requested"])} if "requested" in certificate else {}),
                             **({"skipped": bool(certificate["skipped"])} if "skipped" in certificate else {}),
                             **({"issued": bool(certificate["issued"])} if "issued" in certificate else {}),
                             **({"deduped": bool(certificate["deduped"])} if "deduped" in certificate else {}),
@@ -283,6 +285,7 @@ def build_ingest_receipt_v1(
     domain: str | None | object = _MISSING,
     proof_date: str | None | object = _MISSING,
     evidence_pointer: str | None | object = _MISSING,
+    issue_certificate_requested: bool | None | object = _MISSING,
     metadata: Mapping[str, Any] | None = None,
     core: Mapping[str, Any] | None = None,
 ) -> IngestReceiptV1:
@@ -370,10 +373,15 @@ def build_ingest_receipt_v1(
                         {
                             "domain": domain if domain is not _MISSING and domain is not None else _MISSING,
                             "proof_date": proof_date if proof_date is not _MISSING and proof_date is not None else _MISSING,
+                            "issue_certificate_requested": (
+                                bool(issue_certificate_requested)
+                                if issue_certificate_requested is not _MISSING and issue_certificate_requested is not None
+                                else _MISSING
+                            ),
                         }
                     )
                 }
-                if bool(_coalesce_nullish(domain, proof_date))
+                if bool(_coalesce_nullish(domain, proof_date, issue_certificate_requested))
                 else {}
             ),
             **(
